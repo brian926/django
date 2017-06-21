@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, Http404
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -20,7 +20,7 @@ def topics(request):
 @login_required
 def topic(request, topic_id):
 	"""Show a single topic and all its entries"""
-	topic = Topic.objects.get(id=topic_id)
+	topic = get_object_or_404(Topic, id=topic_id)
 	# Make sure the topic blongs to the current user.
 	if topic.owner != request.user:
 		raise Http404
@@ -37,12 +37,12 @@ def new_topic(request):
 		form = TopicForm()
 	else:
 		# Post data submitted; prcoess data.
-		form = TopcForm(data=request.POST)
+		form = TopicForm(data=request.POST)
 		if form.is_valid():
 			new_topic = form.save(commit=False)
 			new_topic.owner = request.user
 			new_topic.save()
-			return HttpResponseRedirect(reverse('learning_logs:topic'))
+			return HttpResponseRedirect(reverse('learning_logs:topics'))
 
 	context = {'form': form}
 	return render(request, 'learning_logs/new_topic.html', context)
@@ -51,6 +51,8 @@ def new_topic(request):
 def new_entry(request, topic_id):
 	"""Add a new entry for a particular topic."""
 	topic = Topic.objects.get(id=topic_id)
+	if topic.owner != request.user:
+		raise Http404
 
 	if request.method != 'POST':
 		# No data submitted; create a blank form.
